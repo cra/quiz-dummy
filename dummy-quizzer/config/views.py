@@ -82,10 +82,10 @@ def quiz_section(request, quiz_slug, user_uuid, section_part):
         else:
             print(f'request body i got: {body}')
             if 'answers' in body:
-                for q_id in [QID1, QID2, QID3]:
+                for q_id in [QID1, QID2, QID3, QID4]:
                     if q_id in body['answers']:
                         print(f"Found response for {q_id}: {body['answers'][q_id]}")
-            return redirect(f'/q/{quiz_slug}/{UUID}/score')
+            return redirect(f'/q/{quiz_slug}/{UUID}/{section_part}/score')
     questions = [
         Question(
             text="Какое жывотне вы кусаити?",
