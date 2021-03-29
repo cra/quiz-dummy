@@ -41,6 +41,7 @@ QID3 = '6f208012-7882-45c4-b04c-ae0000000003'
 QID4 = '6f208012-7882-45c4-b04c-ae0000000004'
 
 
+@csrf_exempt
 def index(request):
     return JsonResponse({
             '_links': [

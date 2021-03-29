@@ -4,7 +4,7 @@ LABEL maintainer=shrimpsizemoose
 
 ENV PYHTONUNBUFFERED=1
 
-RUN pip install Django==3.1.7 gunicorn
+RUN pip install Django==3.1.7 gunicorn django-cors-headers
 
 RUN mkdir -p /code/config
 COPY dummy-quizzer/config/asgi.py /code/config/

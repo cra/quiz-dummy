@@ -8,7 +8,7 @@ FULL_TAG ?= ${NAMESPACE}/${REPOSITORY}:${TAG}
 	docker build . -t ${FULL_TAG}
 
 @run:
-	docker run -it --rm -p 8000:8000 ${FULL_TAG} --name dummy-quiz-server
+	docker run -it --rm -p 8000:8000 --name dummy-quiz-server ${FULL_TAG}
 
 @push:
 	docker push ${FULL_TAG}
