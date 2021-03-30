@@ -9,21 +9,31 @@ from django.views.decorators.csrf import csrf_exempt
 from uuid import uuid4, UUID
 
 
-class Label(NamedTuple):
-    min_: str
-    max_: str
-    na_: Optional[str] = None
+class Labels(NamedTuple):
+    one: str
+    two: str
+    three: str
+    four: str
+    five: str
+    none: Optional[str] = None
 
-    def json(self):
-        if self.na_ is None:
-            return {'min': self.min_, 'max': self.max_}
-        else:
-            return {'min': self.min_, 'max': self.max_, 'na': self.na_}
+    def json(self) -> dict[str, str]:
+        mapping = {
+            '1': self.one,
+            '2': self.two,
+            '3': self.three,
+            '4': self.four,
+            '5': self.five,
+        }
+        if self.none is not None:
+            mapping['na'] = self.none
+
+        return mapping
 
 
 class Question(NamedTuple):
     text: str
-    labels: Label
+    labels: Labels
     question_uuid: UUID
 
     def json(self):
@@ -35,10 +45,11 @@ class Question(NamedTuple):
 
 
 UUID = '6f208012-7882-45c4-b04c-aed368c593f9'
-QID1 = '6f208012-7882-45c4-b04c-ae0000000001'
-QID2 = '6f208012-7882-45c4-b04c-ae0000000002'
-QID3 = '6f208012-7882-45c4-b04c-ae0000000003'
-QID4 = '6f208012-7882-45c4-b04c-ae0000000004'
+QID0 = '12000000-0000-45c4-b04c-ae0000000000'
+QID1 = '12000000-0000-45c4-b04c-ae0000000001'
+QID2 = '12000000-0000-45c4-b04c-ae0000000002'
+QID3 = '12000000-0000-45c4-b04c-ae0000000003'
+QID4 = '12000000-0000-45c4-b04c-ae0000000004'
 
 
 @csrf_exempt
@@ -51,8 +62,6 @@ def index(request):
                 f'/q/quiz-slug/{UUID}/1/score',
                 f'/q/quiz-slug/{UUID}/2',
                 f'/q/quiz-slug/{UUID}/2/score',
-                f'/q/quiz-slug/{UUID}/3',
-                f'/q/quiz-slug/{UUID}/3/score',
                 f'/q/quiz-slug/{UUID}/final',
             ],
             'message': 'quiz-slug can by any slug string',
@@ -83,29 +92,47 @@ def quiz_section(request, quiz_slug, user_uuid, section_part):
         else:
             print(f'request body i got: {body}')
             if 'answers' in body:
-                for q_id in [QID1, QID2, QID3, QID4]:
+                for q_id in [QID0, QID1, QID2, QID3, QID4]:
                     if q_id in body['answers']:
                         print(f"Found response for {q_id}: {body['answers'][q_id]}")
             return redirect(f'/q/{quiz_slug}/{UUID}/{section_part}/score')
     questions = [
         Question(
             text="Какое жывотне вы кусаити?",
-            labels=Label('1', '5'),
+            labels=Labels('1', '2', 'three', '4', '5'),
+            question_uuid=QID0,
+        ),
+        Question(
+            text="Are you good at juggling?",
+            labels=Labels(
+                "I'm not good at this at all",
+                "It's not exactly my strongest suit",
+                "It's just fine",
+                "It's my strong suit",
+                "I'm an expert in this subject",
+            ),
             question_uuid=QID1,
         ),
         Question(
-            text="How you met your mother? Assuming you are not a god and you have one. You do, right?",
-            labels=Label('Lol what', 'Fuck yeah', 'Yes daddy'),
+            text="Are you winning son?",
+            labels=Labels('Not yet', 'Almost there', 'Not sure', 'Yes?', 'YEAH', 'Not playing'),
             question_uuid=QID2,
         ),
         Question(
             text="Is there anybody out there?",
-            labels=Label('No', 'Yes', 'Pink Floyd sucks'),
+            labels=Labels('No', 'Not really', 'Not sure', 'Maybe', 'Yes', 'Pink Floyd sucks'),
             question_uuid=QID3,
         ),
         Question(
             text="Did you ever hear the Tragedy of Darth Plagueis the Wise?",
-            labels=Label('Ironic', 'Yes', 'Not like this!'),
+            labels=Labels(
+                'Archives are incomplete',
+                'Ironic',
+                "That's why I'm here",
+                'Yes',
+                'Not like this!',
+                'Prequels sucks anyway',
+            ),
             question_uuid=QID4,
         )
     ]
@@ -116,18 +143,19 @@ def quiz_section(request, quiz_slug, user_uuid, section_part):
             'button_text': 'SUBMIT EVERYTHING',
             'error_message': 'так не пойдёт, заполни всё',
             'questions': [q.json() for q in questions],
+            'display_mode': 'slider' if section_part == 1 else 'radio'
         }
     )
 
 
 def quiz_section_score(request, quiz_slug, user_uuid, section_part):
     next_url = f'/q/{quiz_slug}/{UUID}/{section_part + 1}'
-    if section_part >= 3:
+    if section_part >= 2:
         next_url = f'/q/{quiz_slug}/{UUID}/final'
     return JsonResponse({
             'header': f'Your score for {quiz_slug}/{section_part}',
             'text': "<b>Check 'em</b>! Nice job blablabla please proceed. Here's <i>your score</i> btw",
-            'score': f'{random.random() * 10:.2f}',
+            'score': f'{random.random() * 5:.2f}',
             'postscriptum': "His apprentic killed him in his sleep, that's true.",
             'button_text': 'Listen to other stories',
             'next_url': next_url,
@@ -139,29 +167,35 @@ def quiz_section_final(request, quiz_slug, user_uuid):
     scores = [
         {
             'short_name': 'meeting relatives',
-            'score': f'{random.random() * 10:.2f}',
+            'comment': 'this is your estimation on how good you are at meeting relatives',
+            'score': f'{random.random() * 5:.2f}',
         },
         {
             'short_name': 'pink floyd albums',
-            'score': f'{random.random() * 10:.2f}',
+            'comment': "your personal distaste in music lead you here, don't blame me",
+            'score': f'{random.random() * 5:.2f}',
         },
         {
             'short_name': 'star wars crazy tales',
-            'score': f'{random.random() * 10:.2f}',
+            'comment': 'imagine spending all this time to learn how to play piano!',
+            'score': f'{random.random() * 5:.2f}',
         },
         {
             'short_name': 'kobo abe poetry',
-            'score': f'{random.random() * 10:.2f}',
+            'comment': 'no comment here, but at least you can differ kobo from haruki!',
+            'score': f'{random.random() * 5:.2f}',
         },
         {
             'short_name': 'TOOL lyrics',
-            'score': f'{random.random() * 10:.2f}',
+            'comment': 'who are you to wave your finger? no, seriously',
+            'score': f'{random.random() * 5:.2f}',
         },
     ]
     return JsonResponse({
             'header': f'Score for {quiz_slug}',
             'text': "<b>Check 'em</b>! Nice job blablabla please proceed. Here's <i>your score</i> btw",
             'group_scores': scores,
+            'draw_spider': True,
             'postscriptum': "See you in the next one, <i>bro</i>."
         }
     )
