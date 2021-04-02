@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'does not matter, it is a dummy server with no data'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True #False  #True
+DEBUG = True  # False
 
 ALLOWED_HOSTS = ['localhost']
 CORS_ORIGIN_ALLOW_ALL = False

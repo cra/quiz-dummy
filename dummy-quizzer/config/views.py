@@ -1,12 +1,11 @@
-import textwrap
 import random
 from typing import NamedTuple, Optional
 import json
 
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from uuid import uuid4, UUID
+from uuid import UUID
 
 
 class Labels(NamedTuple):
@@ -67,6 +66,7 @@ def index(request):
             'message': 'quiz-slug can by any slug string',
         }
     )
+
 
 @csrf_exempt
 def quiz_start(request, quiz_slug):
@@ -199,3 +199,17 @@ def quiz_section_final(request, quiz_slug, user_uuid):
             'postscriptum': "See you in the next one, <i>bro</i>."
         }
     )
+
+
+@csrf_exempt
+def quiz_clear_user_result(request, quiz_slug, user_uuid):
+    if request.method == 'POST':
+        return redirect(f'/q/{quiz_slug}')
+    else:
+        return JsonResponse(
+            {
+                'confirmation_message': 'Are you sure?',
+                'button_yes': 'Yes',
+                'button_no': 'No',
+            }
+        )

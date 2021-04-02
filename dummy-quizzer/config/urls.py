@@ -13,8 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import include, path
+# from django.contrib import admin
+from django.urls import path
 
 from . import views
 
@@ -33,5 +33,9 @@ urlpatterns = [
         'q/<slug:quiz_slug>/<uuid:user_uuid>/final',
         views.quiz_section_final,
         name='quiz-section-final'),
-    #path('admin/', admin.site.urls),
+    path(
+        'q/<slug:quiz_slug>/<uuid:user_uuid>/clear-it-please',
+        views.quiz_clear_user_result,
+        name='quiz-clear-user-result'),
+    # path('admin/', admin.site.urls),
 ]
