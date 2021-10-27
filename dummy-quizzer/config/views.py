@@ -1,9 +1,9 @@
 import random
-from typing import NamedTuple, Optional
+from typing import List, NamedTuple, Optional
 import json
 
 from django.shortcuts import redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from uuid import UUID
 
@@ -43,59 +43,7 @@ class Question(NamedTuple):
         }
 
 
-UUID = '6f208012-7882-45c4-b04c-aed368c593f9'
-QID0 = '12000000-0000-45c4-b04c-ae0000000000'
-QID1 = '12000000-0000-45c4-b04c-ae0000000001'
-QID2 = '12000000-0000-45c4-b04c-ae0000000002'
-QID3 = '12000000-0000-45c4-b04c-ae0000000003'
-QID4 = '12000000-0000-45c4-b04c-ae0000000004'
-
-
-@csrf_exempt
-def index(request):
-    return JsonResponse({
-            '_links': [
-                '/q/quiz-slug',
-                f'/q/quiz-slug/{UUID}',
-                f'/q/quiz-slug/{UUID}/1',
-                f'/q/quiz-slug/{UUID}/1/score',
-                f'/q/quiz-slug/{UUID}/2',
-                f'/q/quiz-slug/{UUID}/2/score',
-                f'/q/quiz-slug/{UUID}/final',
-            ],
-            'message': 'quiz-slug can by any slug string',
-        }
-    )
-
-
-@csrf_exempt
-def quiz_start(request, quiz_slug):
-    if request.method == 'GET':
-        return JsonResponse({
-                'header': f'Quiz for {quiz_slug}',
-                'intro_text': 'Very <b>cool</b> please <i>proceed</i> yes',
-                'checkbox_text': 'Agree to sell your soul to the devil',
-                'button_text': "Let's go",
-            }
-        )
-    elif request.method == 'POST':
-        return redirect(f'/q/{quiz_slug}/{UUID}/1')
-
-
-@csrf_exempt
-def quiz_section(request, quiz_slug, user_uuid, section_part):
-    if request.method == 'POST':
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError as err:
-            print('ERROR decoding json:', err)
-        else:
-            print(f'request body i got: {body}')
-            if 'answers' in body:
-                for q_id in [QID0, QID1, QID2, QID3, QID4]:
-                    if q_id in body['answers']:
-                        print(f"Found response for {q_id}: {body['answers'][q_id]}")
-            return redirect(f'/q/{quiz_slug}/{UUID}/{section_part}/score')
+def generate_questions(shuffle: bool = True) -> List[Question]:
     questions = [
         Question(
             text="Какое жывотне вы кусаити?",
@@ -136,7 +84,82 @@ def quiz_section(request, quiz_slug, user_uuid, section_part):
             question_uuid=QID4,
         )
     ]
-    random.shuffle(questions)
+    if shuffle:
+        random.shuffle(questions)
+    return questions
+
+
+UUID = '6f208012-7882-45c4-b04c-aed368c593f9'
+QID0 = '00000000-0000-0000-0000-a00000000000'
+QID1 = '00000000-0000-0000-0000-a00000000001'
+QID2 = '00000000-0000-0000-0000-a00000000002'
+QID3 = '00000000-0000-0000-0000-a00000000003'
+QID4 = '00000000-0000-0000-0000-a00000000004'
+
+QZ_SCORES = 'quiz-with-scores'
+QZ_NO_SCORE1 = 'quiz-no-score-after-first'
+ALLOWED_QUIZ_SLUGS = [QZ_SCORES, QZ_NO_SCORE1]
+
+
+@csrf_exempt
+def index(request):
+    return JsonResponse({
+            '_links': [
+                f'/q/{QZ_SCORES}',
+                f'/q/{QZ_SCORES}/{UUID}',
+                f'/q/{QZ_SCORES}/{UUID}/1',
+                f'/q/{QZ_SCORES}/{UUID}/1/score',
+                f'/q/{QZ_SCORES}/{UUID}/2',
+                f'/q/{QZ_SCORES}/{UUID}/2/score',
+                f'/q/{QZ_SCORES}/{UUID}/final',
+                f'/q/{QZ_SCORES}/{UUID}/clear-it-please',
+                f'/q/{QZ_NO_SCORE1}',
+                f'/q/{QZ_NO_SCORE1}/{UUID}',
+                f'/q/{QZ_NO_SCORE1}/{UUID}/1',
+                f'/q/{QZ_NO_SCORE1}/{UUID}/2',
+                f'/q/{QZ_NO_SCORE1}/{UUID}/2/score',
+                f'/q/{QZ_NO_SCORE1}/{UUID}/final',
+                f'/q/{QZ_NO_SCORE1}/{UUID}/clear-it-please',
+            ],
+            'message': 'Only links above are allowed otherwise you get 404',
+        }
+    )
+
+
+@csrf_exempt
+def quiz_start(request, quiz_slug):
+    if quiz_slug not in ALLOWED_QUIZ_SLUGS:
+        return HttpResponseNotFound('Incorrect quiz slug')
+    if request.method == 'GET':
+        return JsonResponse({
+                'header': f'Quiz for {quiz_slug}',
+                'intro_text': 'Very <b>cool</b> please <i>proceed</i> yes',
+                'checkbox_text': 'Agree to sell your soul to the devil',
+                'button_text': "Let's go",
+            }
+        )
+    elif request.method == 'POST':
+        return redirect(f'/q/{quiz_slug}/{UUID}/1')
+
+
+@csrf_exempt
+def quiz_section(request, quiz_slug, user_uuid, section_part):
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError as err:
+            print('ERROR decoding json:', err)
+        else:
+            print(f'request body i got: {body}')
+            if 'answers' in body:
+                for q_id in [QID0, QID1, QID2, QID3, QID4]:
+                    if q_id in body['answers']:
+                        print(f"Found response for {q_id}: {body['answers'][q_id]}")
+            if quiz_slug == QZ_NO_SCORE1 and section_part == 1:
+                return redirect(f'/q/{quiz_slug}/{UUID}/2')
+            else:
+                return redirect(f'/q/{quiz_slug}/{UUID}/{section_part}/score')
+    questions = generate_questions(shuffle=True)
     return JsonResponse({
             'header': f'Quiz for {quiz_slug}',
             'intro_text': f'Very <b>cool</b>, {user_uuid}, please fill all these',
@@ -149,6 +172,8 @@ def quiz_section(request, quiz_slug, user_uuid, section_part):
 
 
 def quiz_section_score(request, quiz_slug, user_uuid, section_part):
+    if quiz_slug == QZ_NO_SCORE1 and section_part == 1:
+        return HttpResponseNotFound('This quiz has no score for this section, move on')
     next_url = f'/q/{quiz_slug}/{UUID}/{section_part + 1}'
     if section_part >= 2:
         next_url = f'/q/{quiz_slug}/{UUID}/final'
@@ -156,8 +181,8 @@ def quiz_section_score(request, quiz_slug, user_uuid, section_part):
             'header': f'Your score for {quiz_slug}/{section_part}',
             'text': "<b>Check 'em</b>! Nice job blablabla please proceed. Here's <i>your score</i> btw",
             'score': f'{random.random() * 5:.2f}',
-            'postscriptum': "His apprentic killed him in his sleep, that's true.",
-            'button_text': 'Listen to other stories',
+            'postscriptum': "Ironic. His apprentice killed him in his sleep.",
+            'button_text': "Funniest shit I've ever seen",
             'next_url': next_url,
         }
     )
@@ -209,7 +234,7 @@ def quiz_clear_user_result(request, quiz_slug, user_uuid):
         return JsonResponse(
             {
                 'confirmation_message': 'Are you sure?',
-                'button_yes': 'Yes',
-                'button_no': 'No',
+                'button_yes': 'Yes please',
+                'button_no': "No! I've changed my mind",
             }
         )
